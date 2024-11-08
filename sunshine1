@@ -1,0 +1,2 @@
+#!/bin/bash
+/opt/homebrew/opt/sunshine-beta/bin/sunshine /Users/clay/.config/sunshine/sunshine.conf

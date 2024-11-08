@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# -+: This indicates that a line was removed in the old diff (before the rebase), but it didn’t appear as a removal in the new diff (after the rebase). So, it’s essentially a change that was removed as part of the rebasing process.
+# --: This shows lines that were deleted in both the old and new diffs.
+# ++: These are lines that were added in both the old and new diffs.
+# +-: This indicates that a line was added in the old diff but removed or changed in the new diff.
+#
+
+# Ensure we're in a git repository
+if [ ! -d .git ]; then
+  echo "This is not a git repository. Exiting."
+  exit 1
+fi
+
+# Get the current branch and previous branch from git
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+PREVIOUS_BRANCH=$(git rev-parse --abbrev-ref @{-1})
+
+echo "Current branch: $CURRENT_BRANCH"
+echo "Previous branch: $PREVIOUS_BRANCH"
+
+# Set the main branch as the common branch (adjust if necessary)
+MAIN_BRANCH="main"
+
+# Ensure the branches exist
+git show-ref --verify --quiet "refs/heads/$CURRENT_BRANCH" || { echo "Branch $CURRENT_BRANCH not found"; exit 1; }
+git show-ref --verify --quiet "refs/heads/$PREVIOUS_BRANCH" || { echo "Branch $PREVIOUS_BRANCH not found"; exit 1; }
+git show-ref --verify --quiet "refs/heads/$MAIN_BRANCH" || { echo "Main branch $MAIN_BRANCH not found"; exit 1; }
+
+# Get the merge base (common ancestor) for both the current branch and the previous branch relative to main
+BASE_COMMIT_PREVIOUS=$(git merge-base $PREVIOUS_BRANCH $MAIN_BRANCH)
+BASE_COMMIT_CURRENT=$(git merge-base $CURRENT_BRANCH $MAIN_BRANCH)
+
+# Generate diffs without writing to files
+echo "Generating diffs for $PREVIOUS_BRANCH..."
+OLD_DIFF=$(git diff $BASE_COMMIT_PREVIOUS..$PREVIOUS_BRANCH)
+
+echo "Generating diffs for $CURRENT_BRANCH..."
+NEW_DIFF=$(git diff $BASE_COMMIT_CURRENT..$CURRENT_BRANCH)
+
+# Compare the two diffs
+echo "Comparing the diffs between $PREVIOUS_BRANCH and $CURRENT_BRANCH..."
+diff -u <(echo "$OLD_DIFF") <(echo "$NEW_DIFF")

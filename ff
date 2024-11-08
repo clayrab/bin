@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Usage: ff -d "target,.git" -f "lock,abi"
+
+# Parse options
+while getopts "d:f:" opt; do
+  case $opt in
+    d) directories=$OPTARG ;;
+    f) filetypes=$OPTARG ;;
+    \?) echo "Usage: ff -d \"dir1,dir2\" -f \"ext1,ext2\"" >&2; exit 1 ;;
+  esac
+done
+
+# Convert comma-separated lists to arrays
+IFS=',' read -r -a dir_array <<< "$directories"
+IFS=',' read -r -a filetype_array <<< "$filetypes"
+
+# Build the find command
+find_command="find ."
+
+# Add directory exclusion conditions
+for dir in "${dir_array[@]}"; do
+  find_command+=" -type d -name $dir -prune -o"
+done
+
+# Add file exclusion conditions
+find_command+=" -type f"
+for ext in "${filetype_array[@]}"; do
+  find_command+=" ! -name \"*.$ext\""
+done
+
+# Add the print action at the end
+find_command+=" -print"
+
+# Execute the generated find command
+eval "$find_command"
